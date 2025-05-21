@@ -3,10 +3,12 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 import time
 
+from interfaces.submitter_interface import BaseSubmitter
+
 username="khaledghonem724"
 password="GoToCode_72"
 problemLink="https://www.hackerearth.com/practice/algorithms/searching/linear-search/practice-problems/algorithm/make-an-array-85abd7ad/"
-storing_file="C:\\Users\\PC Castle\\PyCharmMiscProject\\files\\solution.cpp"
+storing_file="coding_files/code.cpp"
 prog_lang="cpp"
 source_code='''
 #include<bits/stdc++.h>
@@ -48,13 +50,6 @@ int main() {
     }
 }
 '''
-def clean_problem_tags_into_list(self,str_tags):
-    str_tags = str_tags.strip()
-    str_tags = str_tags.strip(',')
-    tags_list = str_tags.split(',')
-    for i in range(len(tags_list)):
-        tags_list[i] = item = tags_list[i].strip()
-    return tags_list
 
 def clean_cpp_code(self,code) -> str:
     return str(code).replace('/', '//')
@@ -102,53 +97,6 @@ class BotUser:
         time.sleep(sleep_time)              # time for updating
         return self.check_login_errors()
 
-class Problem:
-    def __init__(self):
-        self.link = None
-        self.title = None
-        self.time_limit = None
-        self.memory_limit = None
-        self.tags = None
-        self.statement = None
-        self.testcases = None
-        self.explanation = None
-    def __str__(self):
-
-        return (
-                '<<<<<<<<<<<<<<<<<<<< problem printing >>>>>>>>>>>>>>>>>>>> \n'+
-                'problem title : ' + str(self.title) + '\n==========================================================================\n' +
-                'problem link : ' + str(self.link) + '\n==========================================================================\n' +
-                'time_limit : ' + str(self.time_limit) + '\n==========================================================================\n' +
-                'memory_limit : ' + str(self.memory_limit) + '\n==========================================================================\n' +
-                'tags : ' + str(self.tags) + '\n==========================================================================\n' +
-                'statement : \n' + str(self.statement) + '\n==========================================================================\n' +
-                'testcases : \n' + str(self.testcases) + '\n==========================================================================\n' +
-                'explanation : \n' + str(self.explanation) + '\n'
-        )
-    def __repr__(self):
-        return (
-                'problem title : '+ str(type(self.title)) + ' : ' + str(self.title) +'\n' +
-                'problem link : '+ str(type(self.link)) + ' : ' + str(self.link) +'\n' +
-                'time_limit : '+ str(type(self.time_limit)) + ' : ' + str(self.time_limit) + '\n' +
-                'memory_limit : '+ str(type(self.memory_limit)) + ' : ' + str(self.memory_limit) + '\n' +
-                'tags : '+ str(type(self.tags)) + ' : ' + str(self.tags) + '\n' +
-                'statement : \n'+ str(type(self.statement))  + ' : ' + str(self.statement) + '\n' +
-                'testcases : \n'+ str(type(self.testcases))  + ' : ' + str(self.testcases) + '\n' +
-                'explanation : \n'+ str(type(self.explanation))  + ' : ' + str(self.explanation) + '\n'
-                )
-    def get_json(self):
-        return {
-            'problem_handle': 'the problem handle',
-            'link': self.link ,
-            'website': 'hacker earth',
-            'title': self.title,
-            'timelimit': self.time_limit,
-            'memorylimit': self.memory_limit,
-            'statement': 'self.statement',
-            'testcases': 'self.testcases',
-            'notes': 'self.explanation'
-        }
-
 class Submission:
     def __init__(self):
         self.link = None
@@ -171,67 +119,8 @@ class Submission:
                 'code : \n'+ str(type(self.code))  + ' : ' + str(self.code) + '\n'
                 )
 
-class HackerEarthProblemScrapper:
-    def __init__(self,bot_user = None):
-        self.driver = webdriver.Chrome()
-        self.bot = bot_user
-        if self.bot is None:
-            self.bot = BotUser(self.driver)
-        self.bot.login()
-        self.full_problem_page = None
-        self.problem = Problem()
-    def scrap_problem(self,problem_link):
-        self.driver.get(problem_link)
-        self.full_problem_page = self.driver.find_element(By.CLASS_NAME, "practice-problem-container")
-        self.problem.link = problem_link
-        self.problem.tags = self.set_problem_tags()
-        self.problem.title = self.set_problem_title()
-        self.problem.time_limit , self.problem.memory_limit = self.set_problem_limits()
-        self.problem.statement = self.set_problem_statement()
-        self.problem.explanation = self.set_problem_explanation()
-        self.problem.testcases = self.set_problem_testcases()
-        # print(self.problem.get_json()) # for testing
-        return self.problem.get_json()
-    def set_problem_tags(self):
-        MetaData = self.full_problem_page.find_element(By.CLASS_NAME, "problem-meta")
-        listofMobileHiddens= MetaData.find_elements(By.CLASS_NAME,"mobile-hidden")
-        str_tags=listofMobileHiddens[1]
-        return clean_problem_tags_into_list(str_tags.text)
-    def set_problem_title(self):
-        title = self.full_problem_page.find_element(By.CLASS_NAME,"title")
-        return title.text
-    def set_problem_limits(self):
-        str_limits = self.full_problem_page.find_element(By.CLASS_NAME, "problem-solution-limits").text
-        str_limits = str_limits.strip()
-        str_limits = str_limits[:-13].strip()
 
-        str_time_limit = str_limits[:str_limits.find("Memory")].strip()
-        str_memory_limit = str_limits[str_limits.find("Memory"):].strip()
-
-        time_limit = int(str_time_limit.split(':')[1])
-        memory_limit = int(str_memory_limit.split(':')[1])
-
-        return time_limit, memory_limit
-    def set_problem_statement(self):
-        # under development
-        web_element_statement = self.full_problem_page.find_element(By.CLASS_NAME, "description")
-        html_statement = web_element_statement.get_attribute('innerHTML')
-        string_statement = web_element_statement.text
-        return html_statement
-    def set_problem_testcases(self):
-        # under development
-        web_element_testcases = self.full_problem_page.find_element(By.CLASS_NAME, "input-output-container")
-        html_testcases = web_element_testcases.get_attribute('innerHTML')
-        string_testcases = web_element_testcases.text
-        return html_testcases
-    def set_problem_explanation(self):
-        # under development
-        web_element_explanation = self.full_problem_page.find_element(By.CLASS_NAME, "explanation")
-        html_explanation = web_element_explanation.get_attribute('innerHTML')
-        string_explanation = web_element_explanation.text
-        return html_explanation
-
-class HackerEarthProblemSubmitter:
+class HackerEarthProblemSubmitter(BaseSubmitter):
     def __init__(self,bot_user = None):
         self.driver = webdriver.Chrome()
         self.bot = bot_user
@@ -292,8 +181,6 @@ problem_urls =[
     "https://www.hackerearth.com/practice/algorithms/searching/linear-search/practice-problems/algorithm/make-an-array-85abd7ad/",
     "https://www.hackerearth.com/practice/algorithms/searching/linear-search/practice-problems/algorithm/count-mex-8dd2c00c/"
 ]
-#url = problem_urls[2] # try every link to see different results
-#scrapper = HackerEarthProblemScrapper()
-# submitter = HackerEarthProblemSubmitter()
-#problem = scrapper.scrap_problem(url)
-#submitter.submit_solution(problemLink,source_code,prog_lang)
+url = problem_urls[2] # try every link to see different results
+submitter = HackerEarthProblemSubmitter()
+submitter.submit_solution(url,source_code,prog_lang)

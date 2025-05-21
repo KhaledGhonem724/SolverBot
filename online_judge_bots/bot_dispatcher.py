@@ -1,7 +1,7 @@
-from OJ_Bots.hacker_earth import HackerEarthProblemScrapper
-from OJ_Bots.hacker_earth import HackerEarthProblemSubmitter
+from online_judge_bots.hacker_earth import HackerEarthProblemScrapper
+from online_judge_bots.hacker_earth import HackerEarthProblemSubmitter
 
-class JudgeDispatcher:
+class BotDispatcher:
     def __init__(self):
         self.routes = {
             'scrape': {

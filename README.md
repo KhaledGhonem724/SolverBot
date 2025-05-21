@@ -60,7 +60,7 @@ which take the following parameters. <br>
 ## Extend the application to support another OJ
 to allow the application to support new online judge, just do the following steps:  <br>  
 1. add your own file to `OJ_Bots` folder.
-2. this file must follow the constraints for its inner classes and functions.
+2. this file must follow the interface for its inner classes and functions.
 3. you must edit the `judge_dispatcher` file by:
    * importing scraper class and submitter class from your OJ_Bot file. 
    * adding your **online judge domain** and **class name** in the initializing method.
@@ -68,4 +68,17 @@ to allow the application to support new online judge, just do the following step
 
 <hr>
 
-## Thank you
+### Thank you
+
+SolverBot/
+├── OJ_Bots/
+│   ├── interfaces
+│   │   ├── scraper_interface.py
+│   │   └── submitter_interface.py
+│   └──  hacker_earth.py
+├── CodingFiles/
+│   ├── code.cpp
+│   ├── code.java
+│   └── code.py
+├── main.py
+└── judge_dispatcher.py
