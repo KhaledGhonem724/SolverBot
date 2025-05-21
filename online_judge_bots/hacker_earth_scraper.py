@@ -6,7 +6,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 import time
 
-from interfaces.scraper_interface import BaseScraper
+from online_judge_bots.interfaces.scraper_interface import BaseScraper
+# scraper_interface import (BaseScraper)
 
 def clean_problem_tags_into_list(str_tags):
     str_tags = str_tags.strip()
@@ -193,24 +194,29 @@ class HackerEarthProblemScrapper(BaseScraper):
         str_time_limit = str_limits[:str_limits.find("Memory")].strip()
         str_memory_limit = str_limits[str_limits.find("Memory"):].strip()
 
-        # time_limit = int(str_time_limit.split(':')[1])
-        # memory_limit = int(str_memory_limit.split(':')[1])
+        time_limit = int(str_time_limit.split(':')[1])
+        memory_limit = int(str_memory_limit.split(':')[1])
 
-        return str_time_limit + " Sec", str_memory_limit + " MB"
+        return str(time_limit) + " Sec", str(memory_limit) + " MB"
     def set_problem_statement(self):
         web_element_statement = self.full_problem_page.find_element(By.CLASS_NAME, "description")
         html_statement = web_element_statement.get_attribute('innerHTML')
-        str_problem_statement = clean_problem_statement(html_statement)
-        return str_problem_statement
+        #str_problem_statement = clean_problem_statement(html_statement)
+        #return str_problem_statement
+        return html_statement
     def set_problem_testcases(self):
         web_element_testcases = self.full_problem_page.find_element(By.CLASS_NAME, "input-output-container")
         html_testcases = web_element_testcases.get_attribute('innerHTML')
-        str_sample_io = clean_sample_io(html_testcases)
-        return str_sample_io
+        #str_sample_io = clean_sample_io(html_testcases)
+        #return str_sample_io
+        return html_testcases
     def set_problem_explanation(self):
         web_element_explanation = self.full_problem_page.find_element(By.CLASS_NAME, "explanation")
         html_explanation = web_element_explanation.get_attribute('innerHTML')
-        return html_explanation
+        #return html_explanation
+        return clean_mathjax_html(html_explanation)
+'''
+
 
 problem_urls =[
     "https://www.hackerearth.com/practice/algorithms/searching/linear-search/practice-problems/algorithm/equal-strings-79789662-4dbd707c/",
@@ -220,3 +226,4 @@ problem_urls =[
 url = problem_urls[2] # try every link to see different results
 scrapper = HackerEarthProblemScrapper()
 problem = scrapper.scrap_problem(url)
+'''

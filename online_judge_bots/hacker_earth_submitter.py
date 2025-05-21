@@ -118,6 +118,19 @@ class Submission:
                 'judge_response : '+ str(type(self.judge_response)) + ' : ' + str(self.judge_response) + '\n' +
                 'code : \n'+ str(type(self.code))  + ' : ' + str(self.code) + '\n'
                 )
+    def get_json(self):
+        return {
+            'problem_handle': self.generate_problem_handle(),
+            'link': self.link ,
+            'website': 'HackerEarth',
+            'title': self.title,
+            'timelimit': self.time_limit,
+            'memorylimit': self.memory_limit,
+            'statement': self.statement,
+            'testcases': self.testcases,
+            'notes': self.explanation
+        }
+
 
 
 class HackerEarthProblemSubmitter(BaseSubmitter):

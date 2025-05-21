@@ -1,5 +1,5 @@
-from online_judge_bots.hacker_earth import HackerEarthProblemScrapper
-from online_judge_bots.hacker_earth import HackerEarthProblemSubmitter
+#from online_judge_bots.hacker_earth import HackerEarthProblemSubmitter
+from online_judge_bots.hacker_earth_scraper import HackerEarthProblemScrapper
 
 class BotDispatcher:
     def __init__(self):
@@ -8,7 +8,7 @@ class BotDispatcher:
                 'hackerearth.com': HackerEarthProblemScrapper,
             },
             'submit': {
-                'hackerearth.com': HackerEarthProblemSubmitter,
+#                'hackerearth.com': HackerEarthProblemSubmitter,
             }
         }
 
