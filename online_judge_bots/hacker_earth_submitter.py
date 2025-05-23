@@ -1,14 +1,26 @@
-from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-import time
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support import expected_conditions as EC
+
+from selenium.common.exceptions import (
+    TimeoutException, NoSuchElementException, ElementClickInterceptedException, WebDriverException
+)
 
 from interfaces.submitter_interface import BaseSubmitter
 
-username="khaledghonem724"
-password="GoToCode_72"
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent  # goes from 'online_judge_bots' to 'SolverBot'
+FILE_PATH = BASE_DIR / "coding_files" / "hacker_earth_code.txt"
+#FILE_PATH = "/home/khaledghonem/gitrepos/SolverBot/coding_files/hacker_earth_code.txt"
+DEFAULT_USERNAME = "khaledghonem724"
+DEFAULT_PASSWORD = "GoToCode_72"
+
+
+
 problemLink="https://www.hackerearth.com/practice/algorithms/searching/linear-search/practice-problems/algorithm/make-an-array-85abd7ad/"
-storing_file="coding_files/hacker_earth_code.txt"
 prog_lang="cpp"
 source_code='''
 #include<bits/stdc++.h>
@@ -46,148 +58,292 @@ int main() {
         int out_;
         out_ = solve(N, A);
         cout << out_;
-        cout << "\n";
     }
 }
 '''
 
-def clean_cpp_code(self,code) -> str:
-    return str(code).replace('/', '//')
+def clean_cpp_code(code) -> str:
+    return str(code).replace('\\', '\\\\')
 
 class BotUser:
-    def __init__(self, driver, username = "khaledghonem724",password ="GoToCode_72"):
+    def __init__(self, driver, username, password):
         self.driver = driver
         self.username = username
         self.password = password
+
     def check_login_errors(self):
-        # check if the login is successful
-        # if there are errors print them and return False
-        # if not then return True
-        errors_list = self.driver.find_elements(By.CSS_SELECTOR, "ul[class ='errorlist nonfield']")
-        if len(errors_list) > 0:
-            errors = errors_list[0].find_elements(By.TAG_NAME, 'li')
-            massage = []
-            for error in errors:
-                massage.append(error.text)
-                print(error.text)
-            result = {"is_done": False, "massage": massage}
-            print("=======")
-            print(result)
-            return result
-        print("Successfully logged in!")  # testing
-        return {"is_done":True,"massage":["Successfully logged in!"]}
-    def login(self,sleep_time=2) :
         '''
-        :param bot_username: username used to log in
-        :param bot_password: password used to log in
-        :param sleep_time: number of seconds between each step of the log in
-        :return: dict that have 2 keys
-        {
-            "is_done": bool : True if the login is successful , False otherwise
-            "massage": list[str] : list of messages (errors or declaration of Success)
-        }
+        Checks if there are any login error messages.
+
+        :return: dict with result status and messages
         '''
-        # go to log in page, fill the form and submit it
+        try:
+            # Wait until we either leave the login page or timeout
+            WebDriverWait(self.driver, 2).until(
+                lambda d: "login" not in d.current_url
+            )
+        except:
+            # Timeout: still on login page — check for errors
+            pass
+
+        # Check for error messages
+        errors_list = self.driver.find_elements(By.CSS_SELECTOR, "ul.errorlist.nonfield")
+        if errors_list:
+            error_items = errors_list[0].find_elements(By.TAG_NAME, 'li')
+            messages = [error.text for error in error_items]
+            print("Login Errors:", messages)
+            return {"is_done": False, "message": messages}
+
+        print("Successfully logged in!")
+        return {"is_done": True, "message": ["Successfully logged in!"]}
+
+    def login(self, sleep_time=2):
+        '''
+        Logs in to HackerEarth.
+
+        :return: dict with login result and messages
+        '''
         self.driver.get("https://www.hackerearth.com/login/")
-        time.sleep(sleep_time)              # time for updating
+
+        # Wait for login form fields to load
+        WebDriverWait(self.driver, sleep_time).until(
+            EC.presence_of_element_located((By.ID, "id_login"))
+        )
+
         self.driver.find_element(By.ID, "id_login").send_keys(self.username)
         self.driver.find_element(By.ID, "id_password").send_keys(self.password)
-        print("Loging in ...")              # testing
         self.driver.find_element(By.NAME, "signin").click()
-        time.sleep(sleep_time)              # time for updating
+
         return self.check_login_errors()
 
-class Submission:
+class HackerEarthProblemSubmitter(BaseSubmitter):
+    '''
+    returned JSON object:
+    {
+          "task_completed": "True",
+          "response": {"online_judge_response": oj_response,"original_submission_link": submission_link}
+    }
+    or JSON object that contains
+    {
+              "task_completed": "False",
+              "response": "the error message"
+    }
+
+    '''
     def __init__(self):
-        self.link = None
-        self.lang = None
-        self.code = None
-        self.judge_response = None
-    def __str__(self):
-        return (
-                '<<<<<<<<<<<<<<<<<<<< Submission printing >>>>>>>>>>>>>>>>>>>> \n'+
-                'submission link : ' + str(self.link) + '\n==========================================================================\n' +
-                'code language : ' + str(self.lang) + '\n==========================================================================\n' +
-                'judge_response : ' + str(self.judge_response) + '\n==========================================================================\n' +
-                'code : \n' + str(self.code) + '\n==========================================================================\n'
+        self.driver = webdriver.Chrome()
+        self.bot = None
+
+    def create_bot(self,username=None,password=None):
+        if  username is None or password is None :
+            self.bot = BotUser(self.driver, DEFAULT_USERNAME, DEFAULT_PASSWORD)
+        else:
+            self.bot = BotUser(self.driver, username ,password )
+        self.bot.login()
+
+    def write_code_into_file(self, code):
+        #code = clean_cpp_code(code)
+        with open(FILE_PATH, "w") as f:
+            f.write(code)
+
+    def upload_the_file(self,problem_link):
+        self.driver.get(problem_link)
+        # where we will upload the file
+        file_input_element = WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located((By.ID, "codeFile"))
         )
-    def __repr__(self):
-        return (
-                'submission link : '+ str(type(self.link)) + ' : ' + str(self.link) +'\n' +
-                'code language : '+ str(type(self.lang)) + ' : ' + str(self.lang) +'\n' +
-                'judge_response : '+ str(type(self.judge_response)) + ' : ' + str(self.judge_response) + '\n' +
-                'code : \n'+ str(type(self.code))  + ' : ' + str(self.code) + '\n'
-                )
-    def get_json(self):
-        return {
-            'problem_handle': self.generate_problem_handle(),
-            'link': self.link ,
-            'website': 'HackerEarth',
-            'title': self.title,
-            'timelimit': self.time_limit,
-            'memorylimit': self.memory_limit,
-            'statement': self.statement,
-            'testcases': self.testcases,
-            'notes': self.explanation
+        file_input_element.send_keys(str(FILE_PATH))
+
+    def select_programming_language(self, language):
+        # Wait for the select dropdown to be clickable
+        dropdown = WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "select.nice-select"))
+        )
+        select = Select(dropdown)
+
+        # Map language to option value
+        lang_map = {
+            "cpp": "CPP17",
+            "python": "PYTHON3_8",
+            "java": "JAVA17"
         }
 
+        if language not in lang_map:
+            return {"is_done": False, "message": f"language : {language} is not supported"}
+
+        option_value = lang_map[language]
+
+        # Wait for the option with the desired value to be present
+        WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located(
+                (By.CSS_SELECTOR, f"select.nice-select option[value='{option_value}']")
+            )
+        )
+
+        # select the option
+        select.select_by_value(option_value)
+
+        return {"is_done": True, "message": f"Selected language with value: {option_value}"}
+
+    def response_is_ready(self,driver, submission_link):
+        print("iam in response_is_ready")
+        driver.get(submission_link)
+        spans = WebDriverWait(driver, 10).until(
+            EC.visibility_of_all_elements_located((By.CSS_SELECTOR, "div.result > span"))
+        )
+        print("checking ... ")
+        if len(spans) < 2:
+            return False  # not enough spans yet
+        second_span_text = spans[1].text
+        print("until now : "+second_span_text)
+
+        if "Evaluating solution" not in second_span_text:
+            return second_span_text  # condition met, return the response
+        return False  # keep waiting
+
+    def scrap_oj_response(self, problem_link):
+        print("scraping the problem")
+        self.driver.get(problem_link+"submissions/")
+        print("waiting for element_to_be_clickable")
+        #past-submission
+
+        past_submission_table= WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, ".past-submission"))
+        )
+
+        first_row = WebDriverWait(past_submission_table, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".table-row.table-body"))
+        )
+
+        # Extract relevant data from the first row's columns
+        columns = first_row.find_elements(By.CLASS_NAME, "table-column")
 
 
-class HackerEarthProblemSubmitter(BaseSubmitter):
-    def __init__(self,bot_user = None):
-        self.driver = webdriver.Chrome()
-        self.bot = bot_user
-        if self.bot is None:
-            self.bot = BotUser(self.driver)
-        self.bot.login()
-        self.submission = Submission()
-    def write_code_into_file(self,code,file_path = "/solutions/hacker_earth_code.txt") -> str:
+        submission_link= columns[6].find_element(By.TAG_NAME, "a").get_attribute("href")
+        print(submission_link)
+        self.driver.get(submission_link)
+        result_spans = WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_all_elements_located((By.CSS_SELECTOR, "div.result > span"))
+        )
+
+        oj_response = WebDriverWait(self.driver, 60, poll_frequency=5).until(
+            lambda driver: self.response_is_ready(driver, submission_link)
+        )
+
+        print("response :", oj_response)
+
+        return {"status": "done", "online_judge_response": oj_response,"original_submission_link": submission_link}
+
+    def submit_solution(self,problem_link,code,language, username = None, password = None):
         '''
-        DO :
-        1- choose a file to write the code in it        # NOT COMPLETE #
-        2- clean the code           (use "cleaner")     # DONE #
-        3- write the code in the choosen file           # DONE #
-        :param code:
-        :param file_path:
-        :return:
-        '''
-        # NEED : choose file_path according to language
-        code = clean_cpp_code(code)
-        f = open(file_path, "w")
-        f.write(code)
-        f.close()
-        return file_path
-    def submit_solution(self,problem_link,code,language,sleep_time=2):
-        '''
-        DO:
-        1- get the solution file                (use "self.write_code_into_file")
-        2- choose the programming language      # NOT COMPLETE #
-        3- upload the solution file             # DONE #
-        4- scrap the judge response             # NOT COMPLETE #
-        5- fill "self.submission"               # NOT COMPLETE #
+        writing the code into internal file
+        uploading the file as input
+        selecting programming language
+        submitting the solution (code file and selected programming language)
+        scrape the OJ response
         :param problem_link:
         :param code:
         :param language:
-        :param sleep_time:
-        :return:
+        :param username: Optional
+        :param password: Optional
+        :param sleep_time: Optional
+        :return: the scraped response
         '''
-        # NEED : scrap the result , fill "self.submission"
-        # NEED : use "language"
-        file_path = self.write_code_into_file(code)
-        self.driver.get(problem_link)
-        time.sleep(sleep_time)  # time for loading the problem content # not a must
+        try:
+            # Step 1: create and login the bot user
+            try:
+                self.create_bot(username, password)
+            except Exception as e:
+                print(f"Login bot user failed: exception: {e}")
+                return {
+                    "task_completed": "False",
+                    "response": f"Login bot user failed: exception: {e}"
+                }
+            # Step 2: Writing the code into internal file
+            try:
+                self.write_code_into_file(code)
+            except Exception as e:
+                print(f"Failed to write code to internal file: exception: {e}")
+                return {
+                    "task_completed": "False",
+                    "response": f"Failed to write code to internal file: exception: {e}"
+                }
 
-        file_input = self.driver.find_elements(By.ID, "codeFile")[0]
-        file_input.send_keys(file_path)
-        print(file_input)
-        time.sleep(sleep_time)  # time for updating # not a must
-        language_select = self.driver.find_elements(By.CLASS_NAME, "nice-select")[0]
+            # Step 3: Upload Code File as input
+            try:
+                self.upload_the_file(problem_link)
+            except Exception as e:
+                print(f"File upload failed: exception: {e}")
+                return {
+                    "task_completed": "False",
+                    "response": f"File upload failed: exception: {e}"
+                }
 
-        # nice-select
-        submit_button = self.driver.find_elements(By.CSS_SELECTOR,
-                                             "a[class='float-right button btn-blue close-modal-window submit-code medium-margin-right']")
-        time.sleep(sleep_time)  # time for searching # it's a MUST
-        # submit_button[0].click()
+            print("file uploaded") # Loging
+
+            # Step 4: Select Programming Language
+            # NOTE: can be updated to scrape from the OJ through another microservice
+            try:
+                lang_result = self.select_programming_language(language)
+                print(lang_result["message"])
+                if not lang_result["is_done"]:
+                    return {
+                        "task_completed": "False",
+                        "response": f"Language selection failed: exception: {lang_result["message"]}"
+                    }
+            except Exception as e:
+                print(f"Language selection failed: exception: {e}")
+                return {
+                    "task_completed": "False",
+                    "response": f"Language selection failed: exception: {e}"
+                }
+
+            print(lang_result["message"]) # Loging
+
+            # Step 5: Submitting
+            try:
+                submit_button = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR,
+                                                "a.float-right.button.btn-blue.close-modal-window.submit-code.medium-margin-right"))
+                )
+                submit_button.click()
+            except Exception as e:
+                print(f"Submission click failed: exception: {e}")
+                return {
+                    "task_completed": "False",
+                    "response": f"Submission click failed: exception: {e}"
+                }
+
+            print("solution submitted") # Loging
+
+            # Step 6: Scrape Submission Result
+            # Format : {oj_response , oj_submission_link}
+            try:
+                response = self.scrap_oj_response(problem_link)
+            except Exception as e:
+                print(f"Scraping OJ response failed: exception: {e}")
+                return {
+                    "task_completed": "False",
+                    "response": f"Scraping OJ response failed: exception: {e}"
+                }
+
+            return {
+                "task_completed": "True",
+                "response": response
+            }
+        except Exception as e:
+            print(f"Error during submission: {e}")
+            return {
+                "task_completed": "False",
+                "response": str(e)
+            }
+        finally:
+            # quit driver to clean up resources
+            if self.driver:
+                self.driver.quit()
+
+
+
 
 problem_urls =[
     "https://www.hackerearth.com/practice/algorithms/searching/linear-search/practice-problems/algorithm/equal-strings-79789662-4dbd707c/",

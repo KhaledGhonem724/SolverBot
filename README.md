@@ -75,8 +75,8 @@ def __init__(self):
 
 ```json
 {
-  "status": "submitted",      // or "error"
-  "content": "Accepted"       // "Wrong Answer" , "Time Limit Exeeded" Or Error Message 
+  "is_submitted": "True",      // or False
+  "response": "Accepted"       // "Wrong Answer" , "Time Limit Exeeded" Or Error Message 
 }
 ```
 
