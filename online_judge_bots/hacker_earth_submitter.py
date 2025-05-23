@@ -8,7 +8,7 @@ from interfaces.submitter_interface import BaseSubmitter
 username="khaledghonem724"
 password="GoToCode_72"
 problemLink="https://www.hackerearth.com/practice/algorithms/searching/linear-search/practice-problems/algorithm/make-an-array-85abd7ad/"
-storing_file="coding_files/code.cpp"
+storing_file="coding_files/hacker_earth_code.txt"
 prog_lang="cpp"
 source_code='''
 #include<bits/stdc++.h>
@@ -141,7 +141,7 @@ class HackerEarthProblemSubmitter(BaseSubmitter):
             self.bot = BotUser(self.driver)
         self.bot.login()
         self.submission = Submission()
-    def write_code_into_file(self,code,file_path = "/home/khaledghonem/gitrepos/HackerEarth/solutions/code.cpp") -> str:
+    def write_code_into_file(self,code,file_path = "/solutions/hacker_earth_code.txt") -> str:
         '''
         DO :
         1- choose a file to write the code in it        # NOT COMPLETE #
