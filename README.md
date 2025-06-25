@@ -1,245 +1,176 @@
 # 🚀 SolverBot
 
-**SolverBot** is an extensible FastAPI-based platform that automates problem scraping and solution submission for various online judges.
+SolverBot is an extensible automation platform for scraping programming problems and submitting solutions to online judges. Built with FastAPI, it provides a modular API for integrating multiple platforms, starting with HackerEarth.
 
 ---
 
-## 📁 Project Structure
+## Features
+
+- **Scrape Problems:** Extract problem statements, constraints, and test cases from supported online judges.
+- **Submit Solutions:** Automate code submission (framework in place; extendable for new judges).
+- **Modular Design:** Easily add support for new judges via plug-and-play scrapers and submitters.
+- **REST API:** Simple endpoints for integration with other tools or UIs.
+
+---
+
+## Project Structure
 
 ```
 SolverBot/
-├── main.py                         ← API entry point (FastAPI)
+├── main.py                      # FastAPI entry point
+├── requirements.txt             # Python dependencies
 ├── online_judge_bots/
-│   ├── example_scraper.py          ← Platform-specific scraper (e.g., HackerEarth)
-│   ├── example_submitter.py        ← Platform-specific submitter (e.g., HackerEarth)
-│   ├── bot_dispatcher.py           ← Dispatcher for routing tasks
+│   ├── bot_dispatcher.py        # Routes tasks to the correct bot
+│   ├── hacker_earth_scraper.py  # HackerEarth scraper implementation
+│   ├── hacker_earth_submitter.py# (Stub) HackerEarth submitter
 │   └── interfaces/
-│       ├── scraper_interface.py    ← Abstract scraper base class
-│       └── submitter_interface.py  ← Abstract submitter base class
-└── coding_files/
-    ├── example_code.txt            ← Temp storage for solution code
-    └── ...                         ← One code file per platform
+│       ├── scraper_interface.py # Abstract scraper base class
+│       └── submitter_interface.py # Abstract submitter base class
+├── coding_files/                # Temporary code storage
+└── README.md                    # Project documentation
 ```
 
 ---
 
-## 🔧 Components
+## Quickstart
 
-### 1. `main.py` — **API Entry Point**
+### 1. Clone the repository
 
-* Built using **FastAPI**
-* Handles incoming requests to scrape or submit solutions
-* **⚠️ This file is fixed — do not modify it**
-
----
-
-### 2. `bot_dispatcher.py` — **Bot Dispatcher**
-
-* Dynamically routes tasks to the correct platform-specific scraper/submitter classes
-
-```python
-def __init__(self):
-    self.routes = {
-        'scrape': {
-            'example.com': ExampleOJProblemScraper,
-        },
-        'submit': {
-            'example.com': ExampleOJProblemSubmitter,
-        }
-    }
+```bash
+git clone https://github.com/yourusername/SolverBot.git
+cd SolverBot
 ```
 
-* To support new platforms, add entries to this dictionary
+### 2. Install dependencies
+
+It's recommended to use a virtual environment:
+
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 3. Run the API server
+
+```bash
+uvicorn main:app --reload
+```
+
+The API will be available at [http://127.0.0.1:8000](http://127.0.0.1:8000).
+
+#### To run on a different port (e.g., 9000):
+
+```bash
+uvicorn main:app --reload --port 9000
+```
+
+Then the API will be available at [http://127.0.0.1:9000](http://127.0.0.1:9000).
 
 ---
 
-### 3. `submitter.py` — **Submitter Class**
+## API Endpoints
 
-* Each online judge has a corresponding submitter file
-* Implements `BaseSubmitter` from `submitter_interface.py`
-* Filename must be in `snake_case` (e.g., `example_submitter.py`)
+### `POST /scrape`
 
-#### ✅ Input JSON:
+Scrape a problem statement from a supported online judge.
 
+**Request Body:**
 ```json
 {
-  "url": "",
-  "language": "",
-  "code": "",
-  "username": "default_username",
-  "password": "default_password"
+  "url": "https://www.hackerearth.com/problem/example/"
 }
 ```
 
-#### ✅ Output JSON:
-
-```json
-{
-  "is_submitted": "True",      // or False
-  "response": "Accepted"       // "Wrong Answer" , "Time Limit Exeeded" Or Error Message 
-}
-```
-
-#### 📌 Example Template:
-
-```python
-# example_submitter.py
-from online_judge_bots.interfaces.submitter_interface import BaseSubmitter
-
-class ExampleOJProblemSubmitter(BaseSubmitter):
-    def submit(self, data: dict) -> dict:
-        url = data.get("url")
-        language = data.get("language")
-        code = data.get("code")
-        username = data.get("username")
-        password = data.get("password")
-
-        # Implement submission logic here
-        return {
-            "status": "submitted",
-            "content": "Accepted"
-        }
-```
-
----
-
-### 4. `scraper.py` — **Scraper Class**
-
-* Each online judge has a scraper file that implements `BaseScraper` from `scraper_interface.py`
-* Filename must be in `snake_case` (e.g., `example_scraper.py`)
-
-#### ✅ Input JSON:
-
-```json
-{
-  "url": ""
-}
-```
-
-#### ✅ Output JSON:
-
+**Response:**
 ```json
 {
   "status": "scraped",
   "problem": {
-    "problem_handle": "",
-    "link": "",
-    "website": "",
-    "title": "",
-    "timelimit": "",
-    "memorylimit": "",
-    "statement": "",
-    "testcases": "",
-    "notes": ""
+    "problem_handle": "hacker_earth_example_problem",
+    "link": "https://www.hackerearth.com/problem/example/",
+    "website": "HackerEarth",
+    "title": "Example Problem",
+    "timelimit": "1 Sec",
+    "memorylimit": "256 MB",
+    "statement": "...",
+    "testcases": "...",
+    "notes": "..."
   },
-  "tags": []
+  "tags": ["math", "greedy"]
 }
 ```
 
-#### 📌 Example Template:
-
-```python
-# example_scraper.py
-from online_judge_bots.interfaces.scraper_interface import BaseScraper
-
-class ExampleOJProblemScraper(BaseScraper):
-    def scrape(self, url: str) -> dict:
-        # Implement scraping logic here
-        return {
-            "status": "scraped",
-            "problem": {
-                "problem_handle": "SUM123",
-                "link": url,
-                "website": "example.com",
-                "title": "Sum of Two Numbers",
-                "timelimit": "1s",
-                "memorylimit": "256MB",
-                "statement": "Calculate the sum of two integers.",
-                "testcases": "Input: 2 3\nOutput: 5",
-                "notes": "Use fast I/O"
-            },
-            "tags": ["math", "beginner"]
-        }
-```
-
 ---
 
-### 5. `interfaces/` — **Base Interfaces**
+### `POST /submit`
 
-* `scraper_interface.py`:
+Submit a solution to a supported online judge.
 
-  ```python
-  class BaseScraper:
-      def scrap_problem(self, url: str) -> dict:
-          raise NotImplementedError
-  ```
-
-* `submitter_interface.py`:
-
-  ```python
-  class BaseSubmitter:
-      def submit_solution(self, data: dict) -> dict:
-          raise NotImplementedError
-  ```
-
-* **⚠️ These files must not be modified**
----
-### 6. `coding_files/` — **Temporary Code Storage**
-
-* Used to temporarily store solution code for submission.
-* Each platform can have its own file (e.g., `example_code.txt`).
-* These files can be used internally during the submit process.
-
-#### ✅ Developer Note:
-
-You **can** manually add a dedicated file for your online judge (e.g., `yourjudge_code.txt`) if your scraper or submitter needs custom code handling or staging.
-
-Just ensure your submitter writes to and reads from this file as needed. Example:
-
-```python
-# In your submitter
-with open("coding_files/yourjudge_code.txt", "w") as f:
-    f.write(code)
-```
-
-* File naming should follow this convention: `snake_case` + `_code.txt` (e.g., `hacker_rank_code.txt`)
-* This part is optional — only if your submitter needs it.
-
----
-
-## ➕ How to Add Support for a New Online Judge
-
-1. **Create a new scraper and submitter class**:
-
-   * Add `your_judge_scraper.py` and `your_judge_submitter.py` in `online_judge_bots/`
-   * Implement `BaseScraper` and `BaseSubmitter`
-
-2. **Register them in `bot_dispatcher.py`**:
-
-```python
-from online_judge_bots.your_judge_scraper import YourJudgeProblemScraper
-from online_judge_bots.your_judge_submitter import YourJudgeProblemSubmitter
-
-self.routes = {
-    'scrape': {
-        'yourjudge.com': YourJudgeProblemScraper,
-    },
-    'submit': {
-        'yourjudge.com': YourJudgeProblemSubmitter,
-    }
+**Request Body:**
+```json
+{
+  "url": "https://www.hackerearth.com/problem/example/",
+  "code": "print('Hello, world!')",
+  "language": "python"
 }
 ```
 
-3. **You're done!** No need to touch `main.py`, or interfaces.
+**Response:**
+```json
+{
+  "status": "submitted",
+  "result": {
+    "is_submitted": true,
+    "response": "Accepted"
+  }
+}
+```
 
 ---
 
-## 🌟 Support the Project
+## Supported Judges
 
-If you find this project useful, please ⭐ the repo on GitHub — it helps others discover it and keeps the momentum going!
+- **HackerEarth** (scraping supported; submission framework stubbed)
+- *Easily extendable to others (see below)*
 
 ---
 
-## 🙏 Thank You
+## Extending: Add a New Online Judge
 
-Thanks for checking out **SolverBot**! Contributions, feature ideas, and bug reports are all welcome.
+1. **Create Scraper/Submitter Classes:**
+   - Implement `BaseScraper` and/or `BaseSubmitter` in `online_judge_bots/`.
+2. **Register in `bot_dispatcher.py`:**
+   - Add your classes to the `routes` dictionary under the appropriate domain.
+3. **No need to modify `main.py` or interfaces.**
+
+---
+
+## Dependencies
+
+- Python 3.8+
+- FastAPI
+- Uvicorn
+- Selenium
+- BeautifulSoup4
+- (See `requirements.txt` for full list)
+
+---
+
+## Contributing
+
+Pull requests, bug reports, and feature suggestions are welcome! Please open an issue or submit a PR.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
+---
+
+## Acknowledgements
+
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [Selenium](https://www.selenium.dev/)
+- [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/)
