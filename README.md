@@ -59,6 +59,14 @@ uvicorn main:app --reload
 
 The API will be available at [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
+#### To run on a different port (e.g., 9000):
+
+```bash
+uvicorn main:app --reload --port 9000
+```
+
+Then the API will be available at [http://127.0.0.1:9000](http://127.0.0.1:9000).
+
 ---
 
 ## API Endpoints
