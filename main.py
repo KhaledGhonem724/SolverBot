@@ -27,7 +27,29 @@ def submit(data: SubmissionData):
         raise HTTPException(status_code=400, detail="Unsupported judge or invalid URL.")
 
     result = submitter.submit_solution(data.url, data.code, data.language)
-    return {"status": "submitted", "result": result}
+    '''
+    result =
+    {
+        "task_completed": "True" or "False",
+        "response": dict or str
+    }
+    '''
+    if not result.task_completed:
+        print("FUCK")
+        raise HTTPException(status_code=400, detail="Failed to submit"+result.response)
+
+    '''
+    :response:
+        online_judge_response = str(oj_response),
+        original_submission_link = submission_link
+
+    '''
+    print("NOW")
+    print(result.response)
+    print(type(result.response))
+    return result.response
+    #return {"online_judge_response":result.response.online_judge_response,
+    #        "original_submission_link":result.response.original_submission_link}
 
 
 @app.post("/scrape")

@@ -1,14 +1,13 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.ui import WebDriverWait,Select
 from selenium.webdriver.support import expected_conditions as EC
 
 from selenium.common.exceptions import (
     TimeoutException, NoSuchElementException, ElementClickInterceptedException, WebDriverException
 )
 
-from interfaces.submitter_interface import BaseSubmitter
+from online_judge_bots.interfaces.submitter_interface import BaseSubmitter, SubmitResponseModel, OnlineJudgeResponseModel
 
 from pathlib import Path
 
@@ -202,6 +201,15 @@ class HackerEarthProblemSubmitter(BaseSubmitter):
         return False  # keep waiting
 
     def scrap_oj_response(self, problem_link):
+        '''
+
+        :param problem_link:
+        :return:
+        status="done",
+        online_judge_response = str(oj_response),
+        original_submission_link = submission_link
+
+        '''
         print("scraping the problem")
         self.driver.get(problem_link+"submissions/")
         print("waiting for element_to_be_clickable")
@@ -232,10 +240,13 @@ class HackerEarthProblemSubmitter(BaseSubmitter):
 
         print("response :", oj_response)
 
-        return {"status": "done", "online_judge_response": oj_response,"original_submission_link": submission_link}
+        return OnlineJudgeResponseModel(
+            online_judge_response = str(oj_response),
+            original_submission_link = submission_link
+        )
 
-    def submit_solution(self,problem_link,code,language, username = None, password = None):
-        '''
+    def submit_solution(self, problem_link, code, language, username=None, password=None):
+        """
         writing the code into internal file
         uploading the file as input
         selecting programming language
@@ -246,59 +257,56 @@ class HackerEarthProblemSubmitter(BaseSubmitter):
         :param language:
         :param username: Optional
         :param password: Optional
-        :param sleep_time: Optional
-        :return: the scraped response
-        '''
+        :return: SubmitResponseModel instance
+        """
         try:
             # Step 1: create and login the bot user
             try:
                 self.create_bot(username, password)
             except Exception as e:
                 print(f"Login bot user failed: exception: {e}")
-                return {
-                    "task_completed": "False",
-                    "response": f"Login bot user failed: exception: {e}"
-                }
+                return SubmitResponseModel(
+                    task_completed="False",
+                    response=f"Login bot user failed: exception: {e}"
+                )
+
             # Step 2: Writing the code into internal file
             try:
                 self.write_code_into_file(code)
             except Exception as e:
                 print(f"Failed to write code to internal file: exception: {e}")
-                return {
-                    "task_completed": "False",
-                    "response": f"Failed to write code to internal file: exception: {e}"
-                }
+                return SubmitResponseModel(
+                    task_completed="False",
+                    response=f"Failed to write code to internal file: exception: {e}"
+                )
 
             # Step 3: Upload Code File as input
             try:
                 self.upload_the_file(problem_link)
             except Exception as e:
                 print(f"File upload failed: exception: {e}")
-                return {
-                    "task_completed": "False",
-                    "response": f"File upload failed: exception: {e}"
-                }
+                return SubmitResponseModel(
+                    task_completed="False",
+                    response=f"File upload failed: exception: {e}"
+                )
 
-            print("file uploaded") # Loging
+            print("file uploaded")  # Logging
 
             # Step 4: Select Programming Language
-            # NOTE: can be updated to scrape from the OJ through another microservice
             try:
                 lang_result = self.select_programming_language(language)
                 print(lang_result["message"])
                 if not lang_result["is_done"]:
-                    return {
-                        "task_completed": "False",
-                        "response": f"Language selection failed: exception: {lang_result["message"]}"
-                    }
+                    return SubmitResponseModel(
+                        task_completed="False",
+                        response=f"Language selection failed: exception: {lang_result['message']}"
+                    )
             except Exception as e:
                 print(f"Language selection failed: exception: {e}")
-                return {
-                    "task_completed": "False",
-                    "response": f"Language selection failed: exception: {e}"
-                }
-
-            print(lang_result["message"]) # Loging
+                return SubmitResponseModel(
+                    task_completed="False",
+                    response=f"Language selection failed: exception: {e}"
+                )
 
             # Step 5: Submitting
             try:
@@ -309,42 +317,41 @@ class HackerEarthProblemSubmitter(BaseSubmitter):
                 submit_button.click()
             except Exception as e:
                 print(f"Submission click failed: exception: {e}")
-                return {
-                    "task_completed": "False",
-                    "response": f"Submission click failed: exception: {e}"
-                }
+                return SubmitResponseModel(
+                    task_completed="False",
+                    response=f"Submission click failed: exception: {e}"
+                )
 
-            print("solution submitted") # Loging
+            print("solution submitted")  # Logging
 
             # Step 6: Scrape Submission Result
-            # Format : {oj_response , oj_submission_link}
             try:
                 response = self.scrap_oj_response(problem_link)
             except Exception as e:
                 print(f"Scraping OJ response failed: exception: {e}")
-                return {
-                    "task_completed": "False",
-                    "response": f"Scraping OJ response failed: exception: {e}"
-                }
+                return SubmitResponseModel(
+                    task_completed="False",
+                    response=f"Scraping OJ response failed: exception: {e}"
+                )
 
-            return {
-                "task_completed": "True",
-                "response": response
-            }
+            return SubmitResponseModel(
+                task_completed="True",
+                response=response
+            )
+
         except Exception as e:
             print(f"Error during submission: {e}")
-            return {
-                "task_completed": "False",
-                "response": str(e)
-            }
+            return SubmitResponseModel(
+                task_completed="False",
+                response=f"Error during submission: {e}"
+            )
+
         finally:
-            # quit driver to clean up resources
             if self.driver:
                 self.driver.quit()
 
 
-
-
+'''
 problem_urls =[
     "https://www.hackerearth.com/practice/algorithms/searching/linear-search/practice-problems/algorithm/equal-strings-79789662-4dbd707c/",
     "https://www.hackerearth.com/practice/algorithms/searching/linear-search/practice-problems/algorithm/make-an-array-85abd7ad/",
@@ -353,3 +360,4 @@ problem_urls =[
 url = problem_urls[2] # try every link to see different results
 submitter = HackerEarthProblemSubmitter()
 submitter.submit_solution(url,source_code,prog_lang)
+'''

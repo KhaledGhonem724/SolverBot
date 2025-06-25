@@ -159,62 +159,91 @@ class HackerEarthProblemScrapper(BaseScraper):
         self.full_problem_page = None
         self.problem = Problem()
     def scrap_problem(self,problem_link):
-        self.driver.get(problem_link)
-        self.full_problem_page = self.driver.find_element(By.CLASS_NAME, "practice-problem-container")
-        # fill problem attributes
-        self.problem.link = problem_link                            # Done
-        self.problem.tags = self.set_problem_tags()                 # Need work
-        self.problem.title = self.set_problem_title()               # Done
-        self.problem.time_limit , self.problem.memory_limit = self.set_problem_limits()     # Done
-        self.problem.statement = self.set_problem_statement()
-        self.problem.testcases = self.set_problem_testcases()
-        self.problem.explanation = self.set_problem_explanation()
-        json_object = {
-            'status': 'scraped',
-            'problem': self.problem.get_json(),
-            'tags': self.problem.tags
-        }
-        print(json.dumps(json_object, indent=4)) # for testing
-        return json_object
+        try:
+            self.driver.get(problem_link)
+            self.full_problem_page = self.driver.find_element(By.CLASS_NAME, "practice-problem-container")
+            # fill problem attributes
+            self.problem.link = problem_link                            # Done
+            self.problem.tags = self.set_problem_tags()                 # Done
+            self.problem.title = self.set_problem_title()               # Done
+            self.problem.time_limit , self.problem.memory_limit = self.set_problem_limits()     # Done
+            self.problem.statement = self.set_problem_statement()
+            self.problem.testcases = self.set_problem_testcases()
+            self.problem.explanation = self.set_problem_explanation()
+            json_object = {
+                'status': 'scraped',
+                'problem': self.problem.get_json(),
+                'tags': self.problem.tags
+            }
+            print(json.dumps(json_object, indent=4)) # for testing
+            self.driver.quit()
+            return json_object
+        except Exception as e:
+            return {
+                'status': 'failed',
+                'problem':
+                    {
+                        'problem_handle': "",
+                        'link': "",
+                        'website': "",
+                        'title': "",
+                        'timelimit': "",
+                        'memorylimit': "",
+                        'statement': "",
+                        'testcases': "",
+                        'notes': ""
+                    },
+                'tags':
+                    []
+            }
     def set_problem_tags(self):
-        # under development
-        MetaData = self.full_problem_page.find_element(By.CLASS_NAME, "problem-meta")
-        listofMobileHiddens = MetaData.find_elements(By.CLASS_NAME,"mobile-hidden")
-        str_tags = listofMobileHiddens[1]
-        return clean_problem_tags_into_list(str_tags.text)
-        return str_tags.text
+        try:
+            MetaData = self.full_problem_page.find_element(By.CLASS_NAME, "problem-meta")
+            listofMobileHiddens = MetaData.find_elements(By.CLASS_NAME, "mobile-hidden")
+            str_tags = listofMobileHiddens[1]
+            return clean_problem_tags_into_list(str_tags.text)
+        except Exception as e:
+            return []
     def set_problem_title(self):
         title = self.full_problem_page.find_element(By.CLASS_NAME,"title")
         return title.text
     def set_problem_limits(self):
-        str_limits = self.full_problem_page.find_element(By.CLASS_NAME, "problem-solution-limits").text
-        str_limits = str_limits.strip()
-        str_limits = str_limits[:-13].strip()
+        try:
+            str_limits = self.full_problem_page.find_element(By.CLASS_NAME, "problem-solution-limits").text
+            str_limits = str_limits.strip()
+            str_limits = str_limits[:-13].strip()
 
-        str_time_limit = str_limits[:str_limits.find("Memory")].strip()
-        str_memory_limit = str_limits[str_limits.find("Memory"):].strip()
+            str_time_limit = str_limits[:str_limits.find("Memory")].strip()
+            str_memory_limit = str_limits[str_limits.find("Memory"):].strip()
 
-        time_limit = int(str_time_limit.split(':')[1])
-        memory_limit = int(str_memory_limit.split(':')[1])
+            time_limit = int(str_time_limit.split(':')[1])
+            memory_limit = int(str_memory_limit.split(':')[1])
 
-        return str(time_limit) + " Sec", str(memory_limit) + " MB"
+            return str(time_limit) + " Sec", str(memory_limit) + " MB"
+        except Exception as e:
+            return ["Not Mentioned","Not Mentioned"]
     def set_problem_statement(self):
-        web_element_statement = self.full_problem_page.find_element(By.CLASS_NAME, "description")
-        html_statement = web_element_statement.get_attribute('innerHTML')
-        #str_problem_statement = clean_problem_statement(html_statement)
-        #return str_problem_statement
-        return html_statement
+        try:
+            web_element_statement = self.full_problem_page.find_element(By.CLASS_NAME, "description")
+            html_statement = web_element_statement.get_attribute('innerHTML')
+            return html_statement
+        except Exception as e:
+            return "No Problem Statement Available"
     def set_problem_testcases(self):
-        web_element_testcases = self.full_problem_page.find_element(By.CLASS_NAME, "input-output-container")
-        html_testcases = web_element_testcases.get_attribute('innerHTML')
-        #str_sample_io = clean_sample_io(html_testcases)
-        #return str_sample_io
-        return html_testcases
+        try:
+            web_element_testcases = self.full_problem_page.find_element(By.CLASS_NAME, "input-output-container")
+            html_testcases = web_element_testcases.get_attribute('innerHTML')
+            return html_testcases
+        except Exception as e:
+            return "No Problem TestCases Available"
     def set_problem_explanation(self):
-        web_element_explanation = self.full_problem_page.find_element(By.CLASS_NAME, "explanation")
-        html_explanation = web_element_explanation.get_attribute('innerHTML')
-        #return html_explanation
-        return clean_mathjax_html(html_explanation)
+        try:
+            web_element_explanation = self.full_problem_page.find_element(By.CLASS_NAME, "explanation")
+            html_explanation = web_element_explanation.get_attribute('innerHTML')
+            return clean_mathjax_html(html_explanation)
+        except Exception as e:
+            return "No Notes Available"
+
 '''
 
 
